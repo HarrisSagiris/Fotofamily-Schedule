@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/handsontable.full.min.css">
+    <link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+
+    <!-- Excel-like table -->
+    <div id="spreadsheet"></div>
+
+    <form id="saveAssignmentsForm">
+        <button type="submit">Save Assignments</button>
+    </form>
+
+    <script src="/handsontable.full.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const data = <%- JSON.stringify(assignmentsData) %>;
+            const container = document.getElementById('spreadsheet');
+            const hot = new Handsontable(container, {
+                data,
+                colHeaders: ['Photographer', 'Event', 'Location', 'Date', 'Printer'],
+                columns: [
+                    { data: 'photographer', type: 'dropdown', source: <%- JSON.stringify(photographerNames) %> },
+                    { data: 'event' },
+                    { data: 'location' },
+                    { data: 'date', type: 'date' },
+                    { data: 'printer' }
+                ],
+                rowHeaders: true,
+                dropdownMenu: true,
+                contextMenu: true,
+                licenseKey: 'non-commercial-and-evaluation',
+            });
+
+            document.getElementById('saveAssignmentsForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                const updatedData = hot.getData();
+                fetch('/admin/save-assignments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: updatedData })
+                })
+                .then(response => response.json())
+                .then(data => alert("Assignments updated!"));
+            });
+        });
+    </script>
+</body>
+</html>
