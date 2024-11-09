@@ -1,54 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="/handsontable.full.min.css">
-    <link rel="stylesheet" href="/admin.css">
+    <style>
+/* style.css */
+
+body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: #f2f2f2;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+input {
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+#excel-table {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+#excel-table th, #excel-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+#excel-table th {
+    background-color: #f2f2f2;
+}
+
+/* Additional Styles */
+
+.card {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.card-body {
+    padding: 0;
+}
+
+.card-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.card-table th, .card-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.card-table th {
+    background-color: #f2f2f2;
+}
+    </style>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  
 </head>
 <body>
-    <h1>Admin Dashboard</h1>
+  <h1>Admin Dashboard</h1>
 
-    <!-- Excel-like table -->
-    <div id="spreadsheet"></div>
+  <h2>Upload Schedule</h2>
+  <form action="/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="excelFile">
+    <button type="submit">Upload</button>
+  </form>
+  <h2>Add Photographer</h2>
+  <form action="/add-photographer" method="post">
+    <label>Photographer Username:</label>
+    <input type="text" name="username" required>
+    <label>Password:</label>
+    <input type="password" name="password" required>
+    <button type="submit">Add Photographer</button>
+  </form>
 
-    <form id="saveAssignmentsForm">
-        <button type="submit">Save Assignments</button>
-    </form>
+  <h2>Events</h2>
+  <ul>
+    <% events.forEach(event => { %>
+      <li><%= event.date %> - <%= event.time %> - <%= event.location %> - <%= event.photographer %></li>
+    <% }) %>
+  </ul>
 
-    <script src="/handsontable.full.min.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const data = <%- JSON.stringify(assignmentsData) %>;
-            const container = document.getElementById('spreadsheet');
-            const hot = new Handsontable(container, {
-                data,
-                colHeaders: ['Photographer', 'Event', 'Location', 'Date', 'Printer'],
-                columns: [
-                    { data: 'photographer', type: 'dropdown', source: <%- JSON.stringify(photographerNames) %> },
-                    { data: 'event' },
-                    { data: 'location' },
-                    { data: 'date', type: 'date' },
-                    { data: 'printer' }
-                ],
-                rowHeaders: true,
-                dropdownMenu: true,
-                contextMenu: true,
-                licenseKey: 'non-commercial-and-evaluation',
-            });
+  <h2>Photographers</h2>
+  <ul>
+    <% photographers.forEach(photographer => { %>
+      <li><%= photographer.username %></li>
+    <% }) %>
+  </ul>
 
-            document.getElementById('saveAssignmentsForm').addEventListener('submit', function (e) {
-                e.preventDefault();
-                const updatedData = hot.getData();
-                fetch('/admin/save-assignments', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data: updatedData })
-                })
-                .then(response => response.json())
-                .then(data => alert("Assignments updated!"));
-            });
-        });
-    </script>
+  <a href="/logout">Logout</a>
 </body>
 </html>

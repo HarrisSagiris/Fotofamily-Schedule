@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Event</title>
+</head>
+<body>
+  <h1>Create Event</h1>
+  <form action="/create-event" method="POST">
+    <label for="partyName">Event Name:</label>
+    <input type="text" id="partyName" name="partyName" required>
+    <label for="partyDate">Party Date:</label>
+    <input type="date" id="partyDate" name="partyDate" required>
+    <label for="photographer">Photographer:</label>
+    <select name="photographer" id="photographer">
+      <% photographers.forEach(photographer => { %>
+        <option value="<%= photographer._id %>"><%= photographer.email %></option>
+      <% }); %>
+    </select>
+    <label for="location">Location:</label>
+    <input type="text" id="location" name="location" required>
+    <button type="submit">Create Event</button>
+  </form>
+</body>
+</html>
