@@ -1,20 +1,32 @@
-module.exports.isAuthenticated = (req, res, next) => {
-    if (req.isAuthenticated()) {
-        return next();
-    }
-    res.redirect('/login');
+const express = require("express");
+const router = express.Router();
+
+// Hardcoded admin credentials
+const adminCredentials = {
+    email: "admin@gmail.com",
+    password: "123",
 };
 
-module.exports.isAdmin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
-        return next();
-    }
-    res.status(403).send('Access Denied');
-};
+// Render login page
+router.get("/login", (req, res) => {
+    res.render("login", { error: null });
+});
 
-module.exports.isPhotographer = (req, res, next) => {
-    if (req.user && req.user.role === 'photographer') {
-        return next();
+// Login route
+router.post("/login", (req, res) => {
+    const { email, password } = req.body;
+    if (email === adminCredentials.email && password === adminCredentials.password) {
+        req.session.userId = "admin";
+        req.session.role = "admin";
+        res.redirect("/admin");
+    } else {
+        res.render("login", { error: "Invalid credentials" });
     }
-    res.status(403).send('Access Denied');
-};
+});
+
+router.get("/logout", (req, res) => {
+    req.session.destroy();
+    res.redirect("/login");
+});
+
+module.exports = router;

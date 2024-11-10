@@ -1,146 +1,123 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-const fileUpload = require('express-fileupload');
-const xlsx = require('xlsx');
-const session = require('express-session');
-const path = require('path');
+const express = require("express");
+const mongoose = require("mongoose");
+const session = require("express-session");
+const MongoStore = require("connect-mongo");
+const bodyParser = require("body-parser");
+const path = require("path");
 
+// Initialize app
 const app = express();
-const port = 3000;
 
-// MongoDB connection
-mongoose.connect('mongodb+srv://appleidmusic960:Dataking8@tapsidecluster.oeofi.mongodb.net/', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log('MongoDB connected'))
-  .catch((err) => console.log('Error connecting to MongoDB:', err));
-
-// Photographer schema and model
-const photographerSchema = new mongoose.Schema({
-  username: String,
-  password: String,
+// Database connection setup
+mongoose.connect("mongodb+srv://appleidmusic960:Dataking8@tapsidecluster.oeofi.mongodb.net/", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+}).then(() => {
+    console.log("Connected to MongoDB");
+}).catch(err => {
+    console.error("MongoDB connection error:", err);
 });
 
-const Photographer = mongoose.model('Photographer', photographerSchema);
+// Models
+const User = require("./models/User");
+const Event = require("./models/Event");
 
-// Event schema and model
-const eventSchema = new mongoose.Schema({
-  date: String,
-  time: String,
-  location: String,
-  photographer: String,
-});
+// Set EJS as the templating engine
+app.set("view engine", "ejs");
 
-const Event = mongoose.model('Event', eventSchema);
+// Static folder for CSS, JS, etc.
+app.use(express.static(path.join(__dirname, "public")));
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
-app.use(fileUpload());
-app.set('view engine', 'ejs');
-app.set('views', './views');
+app.use(bodyParser.json());
 
 // Session setup
-app.use(session({
-  secret: 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
-}));
+app.use(
+    session({
+        secret: "yourSecretKey",
+        resave: false,
+        saveUninitialized: false,
+        store: MongoStore.create({ mongoUrl: "mongodb+srv://appleidmusic960:Dataking8@tapsidecluster.oeofi.mongodb.net/" }),
+    })
+);
+
+// Middleware for user sessions
+app.use((req, res, next) => {
+    res.locals.user = req.session.user;
+    next();
+});
 
 // Hardcoded admin credentials
-const adminCredentials = { email: 'admin@gmail.com', password: '123' };
-
-// Middleware for access control
-const isAdmin = (req, res, next) => {
-  if (req.session.user && req.session.user.role === 'admin') return next();
-  res.redirect('/login');
-};
-
-const isPhotographer = (req, res, next) => {
-  if (req.session.user && req.session.user.role === 'photographer') return next();
-  res.redirect('/login');
-};
-
-// Routes
-app.get('/', (req, res) => {
-  res.render('index');
-});
+const ADMIN_EMAIL = "admin@gmail.com";
+const ADMIN_PASSWORD = "123";
 
 // Login route
-app.get('/login', (req, res) => {
-  res.render('login', { message: null });
+app.get("/auth/login", (req, res) => {
+    res.render("login", { message: null });
 });
 
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+app.post("/auth/login", (req, res) => {
+    const { email, password } = req.body;
 
-  // Check if admin credentials match
-  if (email === adminCredentials.email && password === adminCredentials.password) {
-    req.session.user = { role: 'admin' };
-    return res.redirect('/admin');
-  }
+    // Check if the credentials match the hardcoded admin credentials
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        // Set the session for the admin
+        req.session.user = { email: ADMIN_EMAIL, role: "admin" };
+        res.redirect("/admin");
+    } else {
+        // Attempt to find a photographer in the database
+        User.findOne({ email, role: "photographer" }, (err, user) => {
+            if (err || !user) {
+                return res.render("login", { message: "Invalid credentials" });
+            }
 
-  // Check if photographer credentials match in database
-  const photographer = await Photographer.findOne({ username: email, password });
-  if (photographer) {
-    req.session.user = { role: 'photographer', name: photographer.username };
-    return res.redirect('/photographer');
-  }
-
-  // Invalid credentials
-  res.render('login', { message: 'Invalid credentials' });
-});
-
-// Admin dashboard
-app.get('/admin', isAdmin, async (req, res) => {
-  const events = await Event.find({});
-  const photographers = await Photographer.find({});
-  res.render('admin', { events, photographers });
-});
-
-// Add photographer route (for admin to create new photographer accounts)
-app.post('/add-photographer', isAdmin, async (req, res) => {
-  const { username, password } = req.body;
-  const newPhotographer = new Photographer({ username, password });
-  await newPhotographer.save();
-  res.redirect('/admin');
-});
-
-// File upload route (for admin to upload schedule)
-app.post('/upload', isAdmin, async (req, res) => {
-  if (!req.files || !req.files.excelFile) {
-    return res.status(400).send('No file uploaded.');
-  }
-
-  const workbook = xlsx.read(req.files.excelFile.data, { type: 'buffer' });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const data = xlsx.utils.sheet_to_json(sheet);
-
-  await Event.deleteMany({});
-  await Event.insertMany(data.map(row => ({
-    date: row.Date,
-    time: row.Time,
-    location: row.Location,
-    photographer: row.Photographer,
-  })));
-
-  res.redirect('/admin');
-});
-
-// Photographer dashboard
-app.get('/photographer', isPhotographer, async (req, res) => {
-  const events = await Event.find({ photographer: req.session.user.name });
-  res.render('photographer', { events });
+            // Redirect photographer to their dashboard
+            req.session.user = { email: user.email, role: "photographer" };
+            res.redirect("/photographer");
+        });
+    }
 });
 
 // Logout route
-app.get('/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/');
+app.get("/auth/logout", (req, res) => {
+    req.session.destroy();
+    res.redirect("/auth/login");
+});
+
+// Protect admin routes
+const isAuthenticatedAdmin = (req, res, next) => {
+    if (req.session.user && req.session.user.role === "admin") {
+        return next();
+    }
+    res.redirect("/auth/login");
+};
+
+// Protect photographer routes
+const isAuthenticatedPhotographer = (req, res, next) => {
+    if (req.session.user && req.session.user.role === "photographer") {
+        return next();
+    }
+    res.redirect("/auth/login");
+};
+
+// Admin dashboard route
+app.get("/admin", isAuthenticatedAdmin, (req, res) => {
+    res.render("admin_dashboard"); // Render your admin dashboard view
+});
+
+// Photographer dashboard route
+app.get("/photographer", isAuthenticatedPhotographer, (req, res) => {
+    res.render("photographer_dashboard"); // Render your photographer dashboard view
+});
+
+// Default route
+app.get("/", (req, res) => {
+    res.redirect("/auth/login");
 });
 
 // Start server
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });
