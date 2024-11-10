@@ -1,38 +1,43 @@
-const express = require("express");
+const express = require('express');
+const Event = require('../models/Event');
+const User = require('../models/User');
 const router = express.Router();
-const User = require("../models/User");
-const Event = require("../models/Event");
 
-// Other existing routes...
+// Ensure only admin can access
+router.use((req, res, next) => {
+    if (req.isAuthenticated() && req.user.role === 'admin') {
+        next();
+    } else {
+        res.redirect('/');
+    }
+});
 
-// Save Events Route
-router.post("/saveEvents", async (req, res) => {
-    const { events } = req.body;
+// Admin dashboard
+router.get('/dashboard', async (req, res) => {
+    const photographers = await User.find({ role: 'photographer' });
+    const events = await Event.find().populate('photographer');
+    res.render('adminDashboard', { photographers, events });
+});
 
+// Event creation
+router.post('/event/create', async (req, res) => {
     try {
-        await Promise.all(events.map(async (eventData) => {
-            const photographer = await User.findOne({ email: eventData.photographerEmail, role: "photographer" });
-            const event = await Event.findOneAndUpdate(
-                { name: eventData.name },
-                {
-                    name: eventData.name,
-                    date: eventData.date,
-                    details: eventData.details,
-                    assignedPhotographer: photographer ? photographer._id : null
-                },
-                { upsert: true, new: true }
-            );
-
-            if (photographer) {
-                photographer.assignedEvents.addToSet(event._id);
-                await photographer.save();
-            }
-        }));
-
-        res.json({ success: true });
+        const { name, date, location, place, comments, photographer } = req.body;
+        const newEvent = new Event({ name, date, location, place, comments, photographer });
+        await newEvent.save();
+        res.redirect('/admin/dashboard');
     } catch (error) {
-        console.error("Error saving events:", error);
-        res.json({ success: false, error: "Failed to save events." });
+        res.status(500).send('Error creating event');
+    }
+});
+
+// Event deletion
+router.post('/event/delete/:id', async (req, res) => {
+    try {
+        await Event.findByIdAndDelete(req.params.id);
+        res.redirect('/admin/dashboard');
+    } catch (error) {
+        res.status(500).send('Error deleting event');
     }
 });
 

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Party Panel</title>
+    <style>
+        /* Add inline styling here as needed */
+        .trash-button { color: red; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Party Panel</h1>
+    <!-- Event Table with Handsontable or alternative Excel-like table -->
+    <form action="/admin/party-panel/add-event" method="POST">
+        <input type="text" name="date" placeholder="Event Date" required>
+        <input type="text" name="details" placeholder="Event Details" required>
+        <input type="text" name="place" placeholder="Event Place">
+        <input type="text" name="comments" placeholder="Comments">
+        <select name="assignedTo">
+            <% photographers.forEach(photographer => { %>
+                <option value="<%= photographer.email %>"><%= photographer.email %></option>
+            <% }) %>
+        </select>
+        <button type="submit">Add Event</button>
+    </form>
+    
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Details</th>
+            <th>Place</th>
+            <th>Comments</th>
+            <th>Assigned To</th>
+            <th>Actions</th>
+        </tr>
+        <% events.forEach(event => { %>
+            <tr>
+                <td><%= event.date %></td>
+                <td><%= event.details %></td>
+                <td><%= event.place %></td>
+                <td><%= event.comments %></td>
+                <td><%= event.assignedTo %></td>
+                <td>
+                    <form action="/admin/party-panel/delete-event/<%= event._id %>" method="POST">
+                        <button type="submit" class="trash-button">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+        <% }) %>
+    </table>
+</body>
+</html>

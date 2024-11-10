@@ -1,123 +1,100 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
-const bodyParser = require("body-parser");
-const path = require("path");
-
-// Initialize app
-const app = express();
-
-// Database connection setup
-mongoose.connect("mongodb+srv://appleidmusic960:Dataking8@tapsidecluster.oeofi.mongodb.net/", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-}).then(() => {
-    console.log("Connected to MongoDB");
-}).catch(err => {
-    console.error("MongoDB connection error:", err);
-});
+const express = require('express');
+const bodyParser = require('body-parser');
+const session = require('express-session');
+const mongoose = require('mongoose');
+const path = require('path');
 
 // Models
-const User = require("./models/User");
-const Event = require("./models/Event");
+const Photographer = require('./models/Photographer');
+const Event = require('./models/Event');
 
-// Set EJS as the templating engine
-app.set("view engine", "ejs");
-
-// Static folder for CSS, JS, etc.
-app.use(express.static(path.join(__dirname, "public")));
-
-// Middleware
+const app = express();
+app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(session({
+    secret: 'secret_key',
+    resave: false,
+    saveUninitialized: true
+}));
 
-// Session setup
-app.use(
-    session({
-        secret: "yourSecretKey",
-        resave: false,
-        saveUninitialized: false,
-        store: MongoStore.create({ mongoUrl: "mongodb+srv://appleidmusic960:Dataking8@tapsidecluster.oeofi.mongodb.net/" }),
-    })
-);
-
-// Middleware for user sessions
-app.use((req, res, next) => {
-    res.locals.user = req.session.user;
-    next();
-});
+// Connect to MongoDB
+mongoose.connect('mongodb+srv://appleidmusic960:Dataking8@tapsidecluster.oeofi.mongodb.net/', { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
 // Hardcoded admin credentials
-const ADMIN_EMAIL = "admin@gmail.com";
-const ADMIN_PASSWORD = "123";
+const adminCredentials = { username: 'admin', password: 'admin123' };
 
-// Login route
-app.get("/auth/login", (req, res) => {
-    res.render("login", { message: null });
+// Middleware to check if user is logged in
+function checkAuth(role) {
+    return (req, res, next) => {
+        if (req.session.user && req.session.user.role === role) {
+            next();
+        } else {
+            res.redirect('/');
+        }
+    };
+}
+
+// Route for login page
+app.get('/', (req, res) => {
+    res.render('login');
 });
 
-app.post("/auth/login", (req, res) => {
-    const { email, password } = req.body;
+// Login POST route
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
 
-    // Check if the credentials match the hardcoded admin credentials
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        // Set the session for the admin
-        req.session.user = { email: ADMIN_EMAIL, role: "admin" };
-        res.redirect("/admin");
-    } else {
-        // Attempt to find a photographer in the database
-        User.findOne({ email, role: "photographer" }, (err, user) => {
-            if (err || !user) {
-                return res.render("login", { message: "Invalid credentials" });
-            }
-
-            // Redirect photographer to their dashboard
-            req.session.user = { email: user.email, role: "photographer" };
-            res.redirect("/photographer");
-        });
+    // Check admin credentials
+    if (username === adminCredentials.username && password === adminCredentials.password) {
+        req.session.user = { role: 'admin' };
+        return res.redirect('/admin/dashboard');
     }
+
+    // Check photographer credentials
+    const photographer = await Photographer.findOne({ username, password });
+    if (photographer) {
+        req.session.user = { role: 'photographer', username: photographer.username, id: photographer._id };
+        return res.redirect('/photographer/dashboard');
+    }
+
+    res.render('login', { error: 'Invalid credentials' });
+});
+
+// Admin dashboard
+app.get('/admin/dashboard', checkAuth('admin'), async (req, res) => {
+    const photographers = await Photographer.find();
+    const events = await Event.find().populate('photographer');
+    res.render('adminDashboard', { photographers, events });
+});
+
+// Route to add photographer
+app.post('/admin/add-photographer', checkAuth('admin'), async (req, res) => {
+    const { username, password } = req.body;
+    const newPhotographer = new Photographer({ username, password });
+    await newPhotographer.save();
+    res.redirect('/admin/dashboard');
+});
+
+// Route to add event
+app.post('/admin/add-event', checkAuth('admin'), async (req, res) => {
+    const { name, date, location, photographerId } = req.body;
+    const newEvent = new Event({ name, date, location, photographer: photographerId });
+    await newEvent.save();
+    res.redirect('/admin/dashboard');
+});
+
+// Photographer dashboard
+app.get('/photographer/dashboard', checkAuth('photographer'), async (req, res) => {
+    const events = await Event.find({ photographer: req.session.user.id });
+    res.render('photographerDashboard', { events });
 });
 
 // Logout route
-app.get("/auth/logout", (req, res) => {
+app.get('/logout', (req, res) => {
     req.session.destroy();
-    res.redirect("/auth/login");
+    res.redirect('/');
 });
 
-// Protect admin routes
-const isAuthenticatedAdmin = (req, res, next) => {
-    if (req.session.user && req.session.user.role === "admin") {
-        return next();
-    }
-    res.redirect("/auth/login");
-};
-
-// Protect photographer routes
-const isAuthenticatedPhotographer = (req, res, next) => {
-    if (req.session.user && req.session.user.role === "photographer") {
-        return next();
-    }
-    res.redirect("/auth/login");
-};
-
-// Admin dashboard route
-app.get("/admin", isAuthenticatedAdmin, (req, res) => {
-    res.render("admin_dashboard"); // Render your admin dashboard view
-});
-
-// Photographer dashboard route
-app.get("/photographer", isAuthenticatedPhotographer, (req, res) => {
-    res.render("photographer_dashboard"); // Render your photographer dashboard view
-});
-
-// Default route
-app.get("/", (req, res) => {
-    res.redirect("/auth/login");
-});
-
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+const PORT = 3000;
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

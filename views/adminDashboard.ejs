@@ -1,103 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
+    <style>
+        /* dashboard.css */
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+h2, h3 {
+  margin-bottom: 15px;
+}
+
+h2 {
+  font-size: 24px;
+}
+
+h3 {
+  font-size: 20px;
+}
+
+a {
+  float: right;
+  text-decoration: none;
+  color: #333;
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+a:hover {
+  background-color: #f0f0f0;
+}
+
+form {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="date"],
+select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+button[type="submit"] {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+    </style>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@8.4.0/dist/handsontable.full.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/handsontable@8.4.0/dist/handsontable.full.min.js"></script>
+    <style>
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+    </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h2>Admin Dashboard</h2>
-        <ul>
-            <li><a href="#events">Event Management</a></li>
-            <li><a href="#addPhotographer">Add Photographer</a></li>
-            <li><a href="#settings">Settings</a></li>
-        </ul>
-    </div>
+    <h2>Admin Dashboard</h2>
+    <a href="/logout">Αποσύνδεση</a>
 
-    <div class="content">
-        <!-- Event Management Section with Handsontable -->
-        <section id="events">
-            <h3>Event Management</h3>
-            <div id="hot"></div>
-            <button id="saveEvents">Save Changes</button>
-        </section>
+    <h3>Add Photographer</h3>
+    <form action="/admin/add-photographer" method="POST">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Add Photographer</button>
+    </form>
 
-        <!-- Add Photographer Section -->
-        <section id="addPhotographer">
-            <h3>Add Photographer</h3>
-            <form action="/admin/addPhotographer" method="POST">
-                <input type="email" name="email" placeholder="Photographer Email" required>
-                <input type="password" name="password" placeholder="Password" required>
-                <button type="submit">Add Photographer</button>
-            </form>
-        </section>
+    <h3>Add Event</h3>
+    <form action="/admin/add-event" method="POST">
+        <input type="text" name="name" placeholder="Χώρος παρτι" required>
+        <input type="date" name="date" required>
+        <input type="text" name="location" placeholder="Αριθμός Παιδιών" required>
+        <select name="photographerId" required>
+            <% photographers.forEach(p => { %>
+                <option value="<%= p._id %>"><%= p.username %></option>
+            <% }) %>
+        </select>
+        <button type="submit">Add Event</button>
+    </form>
 
-        <!-- Settings Section -->
-        <section id="settings">
-            <h3>Settings</h3>
-            <p>Theme settings, contact options, etc.</p>
-        </section>
-    </div>
-
-    <script>
-        // Fetch photographers and events data from the server
-        const photographers = <%- JSON.stringify(photographers) %>;
-        const events = <%- JSON.stringify(events) %>;
-
-        const photographerNames = photographers.map(p => p.email);
-
-        // Initialize Handsontable with event data
-        const container = document.getElementById('hot');
-        const hot = new Handsontable(container, {
-            data: events.map(event => [event.name, event.date, event.details, event.assignedPhotographer?.email || ""]),
-            colHeaders: ['Event Name', 'Date', 'Details', 'Assigned Photographer'],
-            columns: [
-                { data: 0, type: 'text' },
-                { data: 1, type: 'date', dateFormat: 'YYYY-MM-DD' },
-                { data: 2, type: 'text' },
-                { data: 3, type: 'dropdown', source: photographerNames }
-            ],
-            rowHeaders: true,
-            minSpareRows: 1,
-            licenseKey: 'non-commercial-and-evaluation'
-        });
-
-        // Save button functionality to send updated event data to the server
-        document.getElementById('saveEvents').addEventListener('click', async () => {
-            const eventData = hot.getData()
-                .filter(row => row[0] !== null && row[0] !== "");  // Exclude empty rows
-
-            // Map event data to objects to send to the backend
-            const formattedData = eventData.map(row => ({
-                name: row[0],
-                date: row[1],
-                details: row[2],
-                photographerEmail: row[3] || null
-            }));
-
-            try {
-                const response = await fetch('/admin/saveEvents', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ events: formattedData })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    alert("Events saved successfully!");
-                } else {
-                    alert("Error saving events. Please try again.");
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                alert("Error saving events. Please try again.");
-            }
-        });
-    </script>
+    <h3>Πρόγραμμα</h3>
+    <table>
+        <tr>
+            <th>Παρτι</th>
+            <th>Ημερομηνία</th>
+            <th>Αριθμός Παιδιών</th>
+            <th>Φωτογράφος</th>
+        </tr>
+        <% events.forEach(event => { %>
+            <tr>
+                <td><%= event.name %></td>
+                <td><%= event.date %></td>
+                <td><%= event.location %></td>
+                <td><%= event.photographer ? event.photographer.username : 'Unassigned' %></td>
+            </tr>
+        <% }) %>
+    </table>
 </body>
 </html>

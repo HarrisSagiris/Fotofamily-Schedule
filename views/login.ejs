@@ -1,20 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+    <style>
+        /* login.css */
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  margin: 0;
+  padding: 20px;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 250px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+button[type="submit"] {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+p {
+  text-align: center;
+  margin-top: 10px;
+}
+    </style>
 <head>
+    <meta charset="UTF-8">
     <title>Login</title>
-    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <div class="login-container">
-        <h2>Admin Login</h2>
-        <form action="/login" method="POST">
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
-        <% if (error) { %>
-            <p style="color: red;"><%= error %></p>
-        <% } %>
-    </div>
+    <h2>Login</h2>
+    <form action="/login" method="POST">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+    <% if (typeof error !== 'undefined') { %>
+        <p style="color:red;"><%= error %></p>
+    <% } %>
 </body>
 </html>

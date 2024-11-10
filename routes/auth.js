@@ -1,32 +1,26 @@
-const express = require("express");
+const express = require('express');
+const passport = require('passport');
+const User = require('../models/User');
 const router = express.Router();
 
-// Hardcoded admin credentials
-const adminCredentials = {
-    email: "admin@gmail.com",
-    password: "123",
-};
+router.post('/login', passport.authenticate('local', {
+    failureRedirect: '/',
+    successRedirect: '/dashboard',
+}));
 
-// Render login page
-router.get("/login", (req, res) => {
-    res.render("login", { error: null });
-});
-
-// Login route
-router.post("/login", (req, res) => {
-    const { email, password } = req.body;
-    if (email === adminCredentials.email && password === adminCredentials.password) {
-        req.session.userId = "admin";
-        req.session.role = "admin";
-        res.redirect("/admin");
-    } else {
-        res.render("login", { error: "Invalid credentials" });
+router.post('/register/photographer', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const newPhotographer = new User({
+            username,
+            password,
+            role: 'photographer',
+        });
+        await newPhotographer.save();
+        res.redirect('/admin/dashboard');
+    } catch (error) {
+        res.status(500).send('Error creating photographer');
     }
-});
-
-router.get("/logout", (req, res) => {
-    req.session.destroy();
-    res.redirect("/login");
 });
 
 module.exports = router;

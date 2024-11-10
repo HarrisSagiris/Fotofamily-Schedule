@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+    <style>
+        /* photographer-dashboard.css */
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+h2 {
+  margin-bottom: 15px;
+  font-size: 24px;
+}
+
+a {
+  float: right;
+  text-decoration: none;
+  color: #333;
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+a:hover {
+  background-color: #f0f0f0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ddd; /* Add a border to the entire table */
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+    </style>
+<head>
+    <meta charset="UTF-8">
+    <title>Photographer Dashboard</title>
+</head>
+<body>
+    <h2>Photographer Dashboard</h2>
+    <a href="/logout">Logout</a>
+
+    <h3>Τα πάρτι μου</h3>
+    <table border="1">
+        <tr>
+            <th>Χώρος</th>
+            <th>Ημερομηνία</th>
+            <th>Αριθμός Παιδιών</th>
+        </tr>
+        <% events.forEach(event => { %>
+            <tr>
+                <td><%= event.name %></td>
+                <td><%= event.date %></td>
+                <td><%= event.location %></td>
+            </tr>
+        <% }) %>
+    </table>
+</body>
+</html>
