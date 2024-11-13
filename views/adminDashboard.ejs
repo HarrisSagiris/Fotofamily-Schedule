@@ -1,94 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
-    <style>
-        /* dashboard.css */
-
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 20px;
-}
-
-h2, h3 {
-  margin-bottom: 15px;
-}
-
-h2 {
-  font-size: 24px;
-}
-
-h3 {
-  font-size: 20px;
-}
-
-a {
-  float: right;
-  text-decoration: none;
-  color: #333;
-  padding: 5px 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-a:hover {
-  background-color: #f0f0f0;
-}
-
-form {
-  margin-bottom: 20px;
-}
-
-label {
-  display: block;
-  margin-bottom: 5px;
-}
-
-input[type="text"],
-input[type="password"],
-input[type="date"],
-select {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  margin-bottom: 10px;
-}
-
-button[type="submit"] {
-  background-color: #4CAF50;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-th {
-  background-color: #f2f2f2;
-}
-    </style>
 <head>
     <meta charset="UTF-8">
     <title>Admin Dashboard</title>
     <style>
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f6f9;
+        }
+        h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        a {
+            float: right;
+            text-decoration: none;
+            color: #333;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #1baf76;
+            color: white;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #1baf76;
+            color: white;
+        }
+        td[contenteditable="true"] {
+            background-color: #f9f9f9;
+        }
+        select, button {
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button[type="submit"]:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
     <h2>Admin Dashboard</h2>
-    <a href="/logout">Αποσύνδεση</a>
+    <a href="/logout">Logout</a>
 
     <h3>Add Photographer</h3>
     <form action="/admin/add-photographer" method="POST">
@@ -97,35 +69,112 @@ th {
         <button type="submit">Add Photographer</button>
     </form>
 
-    <h3>Add Event</h3>
-    <form action="/admin/add-event" method="POST">
-        <input type="text" name="name" placeholder="Χώρος παρτι" required>
-        <input type="date" name="date" required>
-        <input type="text" name="location" placeholder="Αριθμός Παιδιών" required>
-        <select name="photographerId" required>
-            <% photographers.forEach(p => { %>
-                <option value="<%= p._id %>"><%= p.username %></option>
-            <% }) %>
-        </select>
-        <button type="submit">Add Event</button>
-    </form>
-
-    <h3>Πρόγραμμα</h3>
+    <h3>Events</h3>
     <table>
         <tr>
-            <th>Παρτι</th>
-            <th>Ημερομηνία</th>
-            <th>Αριθμός Παιδιών</th>
-            <th>Φωτογράφος</th>
+            <th>Ημ/νια</th>
+            <th>Μερα</th>
+            <th>Τόπος</th>
+            <th>Ωρα</th>
+            <th>Πελάτης</th>
+            <th>Ονομα παιδιού</th>
+            <th>Ηλικία</th>
+            <th>Παιδιά</th>
+            <th>Οροφος</th>
+            <th>Παιδιά!</th>
+            <th>Photo</th>
+            <th>Info</th>
+            <th>Background</th>
+            <th>Comments</th>
+            <th>Αριθμος Εκτυπωτή</th>
+            <th>Frame</th>
+            <th>Glitter</th>
+            <th>Key</th>
+            <th>Mgn</th>
+            <th>Pr</th>
+            <th>Ret</th>
+            <th>In</th>
+            <th>-Φ</th>
+            <th>-X</th>
+            <th>Net</th>
+            <th>Bank</th>
+            <th>Name</th>
+            <th>Performance</th>
+            <th>Photographer</th>
+            <th>Assign Photographer</th>
         </tr>
+
         <% events.forEach(event => { %>
             <tr>
-                <td><%= event.name %></td>
-                <td><%= event.date %></td>
-                <td><%= event.location %></td>
+                <!-- Editable cells for each category -->
+                <td contenteditable="true"><%= event.date %></td>
+                <td contenteditable="true"><%= event.day %></td>
+                <td contenteditable="true"><%= event.location %></td>
+                <td contenteditable="true"><%= event.time %></td>
+                <td contenteditable="true"><%= event.client %></td>
+                <td contenteditable="true"><%= event.childName %></td>
+                <td contenteditable="true"><%= event.age %></td>
+                <td contenteditable="true"><%= event.children %></td>
+                <td contenteditable="true"><%= event.floor %></td>
+                <td contenteditable="true"><%= event.childrenCount %></td>
+                <td contenteditable="true"><%= event.photo %></td>
+                <td contenteditable="true"><%= event.info %></td>
+                <td contenteditable="true"><%= event.background %></td>
+                <td contenteditable="true"><%= event.comments %></td>
+                <td contenteditable="true"><%= event.extras %></td>
+                <td contenteditable="true"><%= event.frame %></td>
+                <td contenteditable="true"><%= event.glitter %></td>
+                <td contenteditable="true"><%= event.key %></td>
+                <td contenteditable="true"><%= event.mgn %></td>
+                <td contenteditable="true"><%= event.pr %></td>
+                <td contenteditable="true"><%= event.ret %></td>
+                <td contenteditable="true"><%= event.in %></td>
+                <td contenteditable="true"><%= event.minusPhi %></td>
+                <td contenteditable="true"><%= event.minusX %></td>
+                <td contenteditable="true"><%= event.net %></td>
+                <td contenteditable="true"><%= event.bank %></td>
+                <td contenteditable="true"><%= event.name %></td>
+                <td contenteditable="true"><%= event.performance %></td>
+
+                <!-- Display current photographer -->
                 <td><%= event.photographer ? event.photographer.username : 'Unassigned' %></td>
+
+                <!-- Dropdown for assigning photographer -->
+                <td>
+                    <form action="/admin/assign-photographer" method="POST">
+                        <input type="hidden" name="eventId" value="<%= event._id %>">
+                        <select name="photographerId">
+                            <option value="">Select Photographer</option>
+                            <% photographers.forEach(photographer => { %>
+                                <option value="<%= photographer._id %>" <%= event.photographer && event.photographer._id.toString() === photographer._id.toString() ? 'selected' : '' %>>
+                                    <%= photographer.username %>
+                                </option>
+                            <% }) %>
+                        </select>
+                        <button type="submit">Assign</button>
+                    </form>
+                </td>
             </tr>
         <% }) %>
     </table>
+
+    <script>
+        // Move focus to the next cell when pressing Enter
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                let currentCell = document.activeElement;
+                if (currentCell.contentEditable === "true") {
+                    let nextRow = currentCell.parentElement.nextElementSibling;
+                    if (nextRow) {
+                        let nextCell = nextRow.cells[currentCell.cellIndex];
+                        if (nextCell && nextCell.contentEditable === "true") {
+                            nextCell.focus();
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

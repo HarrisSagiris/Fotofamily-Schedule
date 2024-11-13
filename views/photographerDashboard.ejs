@@ -1,69 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
-    <style>
-        /* photographer-dashboard.css */
-
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 20px;
-}
-
-h2 {
-  margin-bottom: 15px;
-  font-size: 24px;
-}
-
-a {
-  float: right;
-  text-decoration: none;
-  color: #333;
-  padding: 5px 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-a:hover {
-  background-color: #f0f0f0;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid #ddd; /* Add a border to the entire table */
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-th {
-  background-color: #f2f2f2;
-}
-    </style>
 <head>
     <meta charset="UTF-8">
     <title>Photographer Dashboard</title>
+    <style>
+        /* Basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+
+        button[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <h2>Πρόγραμμα Πάρτι</h2>
-    <a href="/logout">Αποσύνδεση</a>
+    <h2>Photographer Dashboard</h2>
+    <a href="/logout">Logout</a>
 
-    <h3>Τα πάρτι μου</h3>
-    <table border="1">
+    <h3>Assigned Events</h3>
+
+    <table>
         <tr>
-            <th>Χώρος</th>
-            <th>Ημερομηνία</th>
-            <th>Αριθμός Παιδιών</th>
+            <th>Date</th>
+            <th>Location</th>
+            <th>Children</th>
+            <th>Count</th>
+            <th>Photo</th>
+            <th>Comments</th>
+            <th>Actions</th>
         </tr>
         <% events.forEach(event => { %>
-            <tr>
-                <td><%= event.name %></td>
-                <td><%= event.date %></td>
-                <td><%= event.location %></td>
-            </tr>
+            <form action="/photographer/update-event" method="POST">
+                <tr>
+                    <!-- Displaying date, formatted correctly -->
+                    <td><%= new Date(event.date).toLocaleDateString() %></td>
+                    <td><%= event.location %></td>
+                    
+                    <!-- Editable fields for the photographer -->
+                    <td><input type="number" name="children" value="<%= event.children %>" required></td>
+                    <td><input type="number" name="count" value="<%= event.count %>" required></td>
+                    <td><input type="text" name="photo" value="<%= event.photo %>" required></td>
+                    <td><input type="text" name="comments" value="<%= event.comments %>"></td>
+
+                    <!-- Hidden input to pass the event ID -->
+                    <input type="hidden" name="eventId" value="<%= event._id %>">
+                    <td><button type="submit">Update</button></td>
+                </tr>
+            </form>
         <% }) %>
     </table>
 </body>
