@@ -2,8 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const Photographer = require('../models/photographer'); // Photographer model
-const Event = require('../models/event'); // Event model
+const Photographer = require('../models/Photographer'); // Photographer model
+const Event = require('../models/Event'); // Event model
 
 // Middleware to ensure photographer is authenticated
 function isAuthenticated(req, res, next) {
@@ -68,6 +68,22 @@ router.post('/update-event', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error updating event:', error);
         res.status(500).send('Server error');
+    }
+});
+
+// Route to assign photographer to event
+router.put('/assign-photographer', async (req, res) => {
+    try {
+        const { eventId, photographerId } = req.body;
+        const event = await Event.findByIdAndUpdate(
+            eventId,
+            { photographer: photographerId },
+            { new: true }
+        ).populate('photographer');
+        res.json(event);
+    } catch (error) {
+        console.error('Error assigning photographer:', error);
+        res.status(500).json({ error: 'Failed to assign photographer' });
     }
 });
 

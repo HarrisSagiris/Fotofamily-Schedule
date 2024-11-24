@@ -4,175 +4,867 @@
     <meta charset="UTF-8">
     <title>Admin Dashboard</title>
     <style>
+        /* Styling */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
             margin: 0;
             padding: 20px;
-            background-color: #f4f6f9;
         }
-        h2 {
-            font-size: 24px;
-            margin-bottom: 15px;
+        h2, h3 {
+            color: #333;
         }
         a {
             float: right;
-            text-decoration: none;
-            color: #333;
-            padding: 5px 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
             background-color: #1baf76;
             color: white;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        a:hover {
+            background-color: #19a96a;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
             background-color: #fff;
+            margin-top: 20px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e0e0e0;
         }
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
+            padding: 6px 8px;
+            text-align: left;
+            border: 1px solid #e0e0e0;
+            min-width: 100px;
+            height: 22px;
+            font-size: 14px;
         }
         th {
-            background-color: #1baf76;
-            color: white;
+            background-color: #f3f3f3;
+            color: #333;
+            font-weight: bold;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            cursor: pointer;
+        }
+        /* Add row numbers column */
+        table tr {
+            counter-increment: rowNumber;
+        }
+        table tr td:first-child,
+        table tr th:first-child {
+            position: sticky;
+            left: 0;
+            background: #f3f3f3;
+            z-index: 1;
+            width: 40px;
+            min-width: 40px;
+            text-align: center;
+            font-weight: bold;
+        }
+        table tr td:first-child::before {
+            content: counter(rowNumber);
+        }
+        /* Add column letters row */
+        table tr:first-child th {
+            position: sticky;
+            top: 0;
+            background: #f3f3f3;
+            z-index: 2;
+        }
+        table tr:first-child th:not(:first-child)::before {
+            content: attr(data-column);
+            display: block;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 4px;
+            color: #666;
         }
         td[contenteditable="true"] {
-            background-color: #f9f9f9;
+            cursor: cell;
+            outline: none;
         }
-        select, button {
+        td[contenteditable="true"]:hover {
+            background-color: #f5f5f5;
+        }
+        td[contenteditable="true"]:focus {
+            background-color: #fff;
+            box-shadow: inset 0 0 0 2px #1a73e8;
+            border: none;
+        }
+        button[type="submit"], select, input[type="text"], input[type="password"] {
             padding: 5px;
             border-radius: 5px;
             border: 1px solid #ddd;
+            margin: 5px 0;
         }
         button[type="submit"] {
-            background-color: #4CAF50;
+            background-color: #1baf76;
             color: white;
             cursor: pointer;
         }
         button[type="submit"]:hover {
             background-color: #45a049;
         }
+        .save-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .save-success {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .save-error {
+            background-color: #f44336;
+            color: white;
+        }
+        th:hover {
+            background-color: #e8e8e8;
+        }
+        td[contenteditable="true"].selected {
+            background-color: #e8f0fe;
+        }
+        tr:hover td {
+            background-color: #f8f9fa;
+        }
+        .formula-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .formula-select {
+            padding: 5px;
+            border-radius: 5px;
+            min-width: 150px;
+        }
+        .cell-selection-mode td[contenteditable="true"]:hover {
+            cursor: crosshair;
+            background-color: #e3f2fd;
+        }
+        .selected-for-calc {
+            background-color: #bbdefb !important;
+        }
+        .target-cell-mode td[contenteditable="true"]:hover {
+            background-color: #c8e6c9;
+            cursor: pointer;
+        }
+        .formula-cell {
+            background-color: #e8f0fe !important;
+            position: relative;
+        }
+        .formula-cell::after {
+            content: "fx";
+            position: absolute;
+            top: 0;
+            right: 0;
+            font-size: 10px;
+            color: #1a73e8;
+            padding: 2px;
+        }
+        .remove-formula {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            display: none;
+            z-index: 100;
+        }
+        .formula-cell:hover .remove-formula {
+            display: block;
+        }
+        .formula-info {
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            font-size: 10px;
+            color: #666;
+            white-space: nowrap;
+        }
+        .table-container {
+            overflow-x: auto;
+            max-height: 80vh;
+        }
+        .multi-select-info {
+            margin: 10px 0;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            display: none;
+        }
+        /* Add styles for selected header */
+        th.selected-header {
+            background-color: #bbdefb;
+        }
+        /* Add styles for condition inputs */
+        .condition-inputs {
+            display: none;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        .condition-inputs.active {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .condition-select {
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .condition-value {
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        /* Add delete button styles */
+        .delete-row-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 2px 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .delete-row-btn:hover {
+            background-color: #d32f2f;
+        }
+        
+        /* Login success animation */
+        @keyframes popIn {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+            20% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 1;
+            }
+            40% {
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+            60% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            80% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        .login-success {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: fit-content;
+            min-width: 350px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            text-align: center;
+            padding: 25px 35px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 15px;
+            z-index: 1000;
+            animation: popIn 4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .login-success i {
+            margin-right: 12px;
+            color: #fff;
+            font-size: 24px;
+            vertical-align: middle;
+            animation: bounce 1.5s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <h2>Admin Dashboard</h2>
     <a href="/logout">Logout</a>
 
     <h3>Add Photographer</h3>
-    <form action="/admin/add-photographer" method="POST">
+    <form action="/admin/create-photographer" method="POST">
         <input type="text" name="username" placeholder="Username" required>
         <input type="password" name="password" placeholder="Password" required>
         <button type="submit">Add Photographer</button>
     </form>
 
-    <h3>Events</h3>
-    <table>
-        <tr>
-            <th>Ημ/νια</th>
-            <th>Μερα</th>
-            <th>Τόπος</th>
-            <th>Ωρα</th>
-            <th>Πελάτης</th>
-            <th>Ονομα παιδιού</th>
-            <th>Ηλικία</th>
-            <th>Παιδιά</th>
-            <th>Οροφος</th>
-            <th>Παιδιά!</th>
-            <th>Photo</th>
-            <th>Info</th>
-            <th>Background</th>
-            <th>Comments</th>
-            <th>Αριθμος Εκτυπωτή</th>
-            <th>Frame</th>
-            <th>Glitter</th>
-            <th>Key</th>
-            <th>Mgn</th>
-            <th>Pr</th>
-            <th>Ret</th>
-            <th>In</th>
-            <th>-Φ</th>
-            <th>-X</th>
-            <th>Net</th>
-            <th>Bank</th>
-            <th>Name</th>
-            <th>Performance</th>
-            <th>Photographer</th>
-            <th>Assign Photographer</th>
-        </tr>
+    <div id="saveStatus" class="save-status"></div>
+    <div class="formula-bar">
+        <select id="formulaSelect" class="formula-select">
+            <option value="">Select Operation</option>
+            <option value="SUM">Sum</option>
+            <option value="SUMIF">Sum If</option>
+            <option value="COUNTIF">Count If</option>
+            <option value="AVERAGEIF">Average If</option>
+            <option value="AVG">Average</option>
+            <option value="MIN">Minimum</option>
+            <option value="MAX">Maximum</option>
+            <option value="COUNT">Count</option>
+            <option value="MULTIPLY">Multiply</option>
+            <option value="SUBTRACT">Subtract</option>
+            <option value="DIVIDE">Divide</option>
+        </select>
+        <div id="conditionInputs" class="condition-inputs">
+            <select id="conditionOperator" class="condition-select">
+                <option value="=">=</option>
+                <option value=">">&gt;</option>
+                <option value="<">&lt;</option>
+                <option value=">=">&gt;=</option>
+                <option value="<=">&lt;=</option>
+                <option value="!=">!=</option>
+                <option value="contains">Contains</option>
+            </select>
+            <input type="text" id="conditionValue" class="condition-value" placeholder="Condition value">
+        </div>
+        <button id="startCalc" style="display:none;">Select Cells</button>
+        <button id="finishSelection" style="display:none;">Choose Target</button>
+        <button id="cancelCalc" style="display:none;">Cancel</button>
+        <div id="multiSelectInfo" class="multi-select-info"></div>
+        <!-- Login success message -->
+    <div class="login-success">
+        <i class="fas fa-check-circle"></i>
+        Successfully logged in as Admin 
+    </div>
+    </div>
 
-        <% events.forEach(event => { %>
+    <div class="table-container">
+        <h3>Events</h3>
+        <table id="eventsTable">
+            <!-- Table headers with column letters -->
             <tr>
-                <!-- Editable cells for each category -->
-                <td contenteditable="true"><%= event.date %></td>
-                <td contenteditable="true"><%= event.day %></td>
-                <td contenteditable="true"><%= event.location %></td>
-                <td contenteditable="true"><%= event.time %></td>
-                <td contenteditable="true"><%= event.client %></td>
-                <td contenteditable="true"><%= event.childName %></td>
-                <td contenteditable="true"><%= event.age %></td>
-                <td contenteditable="true"><%= event.children %></td>
-                <td contenteditable="true"><%= event.floor %></td>
-                <td contenteditable="true"><%= event.childrenCount %></td>
-                <td contenteditable="true"><%= event.photo %></td>
-                <td contenteditable="true"><%= event.info %></td>
-                <td contenteditable="true"><%= event.background %></td>
-                <td contenteditable="true"><%= event.comments %></td>
-                <td contenteditable="true"><%= event.extras %></td>
-                <td contenteditable="true"><%= event.frame %></td>
-                <td contenteditable="true"><%= event.glitter %></td>
-                <td contenteditable="true"><%= event.key %></td>
-                <td contenteditable="true"><%= event.mgn %></td>
-                <td contenteditable="true"><%= event.pr %></td>
-                <td contenteditable="true"><%= event.ret %></td>
-                <td contenteditable="true"><%= event.in %></td>
-                <td contenteditable="true"><%= event.minusPhi %></td>
-                <td contenteditable="true"><%= event.minusX %></td>
-                <td contenteditable="true"><%= event.net %></td>
-                <td contenteditable="true"><%= event.bank %></td>
-                <td contenteditable="true"><%= event.name %></td>
-                <td contenteditable="true"><%= event.performance %></td>
-
-                <!-- Display current photographer -->
-                <td><%= event.photographer ? event.photographer.username : 'Unassigned' %></td>
-
-                <!-- Dropdown for assigning photographer -->
-                <td>
-                    <form action="/admin/assign-photographer" method="POST">
-                        <input type="hidden" name="eventId" value="<%= event._id %>">
-                        <select name="photographerId">
-                            <option value="">Select Photographer</option>
-                            <% photographers.forEach(photographer => { %>
-                                <option value="<%= photographer._id %>" <%= event.photographer && event.photographer._id.toString() === photographer._id.toString() ? 'selected' : '' %>>
-                                    <%= photographer.username %>
-                                </option>
-                            <% }) %>
-                        </select>
-                        <button type="submit">Assign</button>
-                    </form>
-                </td>
+                <th>#</th>
+                <th data-column="A">Ημ/νια</th>
+                <th data-column="B">Μερα</th>
+                <th data-column="C">Τόπος</th>
+                <th data-column="D">Ωρα</th>
+                <th data-column="E">Πελάτης</th>
+                <th data-column="F">Ονομα παιδιού</th>
+                <th data-column="G">Ηλικία</th>
+                <th data-column="H">Παιδιά</th>
+                <th data-column="I">Οροφος</th>
+                <th data-column="J">Παιδιά!</th>
+                <th data-column="K">Photo</th>
+                <th data-column="L">Info</th>
+                <th data-column="M">Background</th>
+                <th data-column="N">Σχόλια Φωτογράφου</th>
+                <th data-column="O">Αριθμος Εκτυπωτή</th>
+                <th data-column="P">Frame</th>
+                <th data-column="Q">Glitter</th>
+                <th data-column="R">Key</th>
+                <th data-column="S">Mgn</th>
+                <th data-column="T">Pr</th>
+                <th data-column="U">Ret</th>
+                <th data-column="V">In</th>
+                <th data-column="W">-Φ</th>
+                <th data-column="X">-X</th>
+                <th data-column="Y">Net</th>
+                <th data-column="Z">Bank</th>
+                <th data-column="AA">Name</th>
+                <th data-column="AB">Απόδοση</th>
+                <th data-column="AC">Φωτογράφος</th>
+                <th data-column="AD">Διάλεξε Φωτογράφο</th>
+                <th>Actions</th>
             </tr>
-        <% }) %>
-    </table>
+
+            <% events.forEach((event, rowIndex) => { %>
+                <tr data-event-id="<%= event._id %>">
+                    <!-- Row number cell -->
+                    <td></td>
+                    <!-- Table cells remain the same -->
+                    <td contenteditable="true" data-field="date" data-cell="A<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.date ? JSON.stringify(event.formulas.date) : "" %>'><%= event.date || '' %></td>
+                    <td contenteditable="true" data-field="day" data-cell="B<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.day ? JSON.stringify(event.formulas.day) : "" %>'><%= event.day || '' %></td>
+                    <td contenteditable="true" data-field="location" data-cell="C<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.location ? JSON.stringify(event.formulas.location) : "" %>'><%= event.location || '' %></td>
+                    <td contenteditable="true" data-field="time" data-cell="D<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.time ? JSON.stringify(event.formulas.time) : "" %>'><%= event.time || '' %></td>
+                    <td contenteditable="true" data-field="client" data-cell="E<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.client ? JSON.stringify(event.formulas.client) : "" %>'><%= event.client || '' %></td>
+                    <td contenteditable="true" data-field="childName" data-cell="F<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.childName ? JSON.stringify(event.formulas.childName) : "" %>'><%= event.childName || '' %></td>
+                    <td contenteditable="true" data-field="age" data-cell="G<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.age ? JSON.stringify(event.formulas.age) : "" %>'><%= event.age || '' %></td>
+                    <td contenteditable="true" data-field="children" data-cell="H<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.children ? JSON.stringify(event.formulas.children) : "" %>'><%= event.children || '' %></td>
+                    <td contenteditable="true" data-field="floor" data-cell="I<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.floor ? JSON.stringify(event.formulas.floor) : "" %>'><%= event.floor || '' %></td>
+                    <td contenteditable="true" data-field="childrenCount" data-cell="J<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.childrenCount ? JSON.stringify(event.formulas.childrenCount) : "" %>'><%= event.childrenCount || '' %></td>
+                    <td contenteditable="true" data-field="photo" data-cell="K<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.photo ? JSON.stringify(event.formulas.photo) : "" %>'><%= event.photo || '' %></td>
+                    <td contenteditable="true" data-field="info" data-cell="L<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.info ? JSON.stringify(event.formulas.info) : "" %>'><%= event.info || '' %></td>
+                    <td contenteditable="true" data-field="background" data-cell="M<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.background ? JSON.stringify(event.formulas.background) : "" %>'><%= event.background || '' %></td>
+                    <td contenteditable="true" data-field="comments" data-cell="N<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.comments ? JSON.stringify(event.formulas.comments) : "" %>'><%= event.comments || '' %></td>
+                    <td contenteditable="true" data-field="extras" data-cell="O<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.extras ? JSON.stringify(event.formulas.extras) : "" %>'><%= event.extras || '' %></td>
+                    <td contenteditable="true" data-field="frame" data-cell="P<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.frame ? JSON.stringify(event.formulas.frame) : "" %>'><%= event.frame || '' %></td>
+                    <td contenteditable="true" data-field="glitter" data-cell="Q<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.glitter ? JSON.stringify(event.formulas.glitter) : "" %>'><%= event.glitter || '' %></td>
+                    <td contenteditable="true" data-field="key" data-cell="R<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.key ? JSON.stringify(event.formulas.key) : "" %>'><%= event.key || '' %></td>
+                    <td contenteditable="true" data-field="mgn" data-cell="S<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.mgn ? JSON.stringify(event.formulas.mgn) : "" %>'><%= event.mgn || '' %></td>
+                    <td contenteditable="true" data-field="pr" data-cell="T<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.pr ? JSON.stringify(event.formulas.pr) : "" %>'><%= event.pr || '' %></td>
+                    <td contenteditable="true" data-field="ret" data-cell="U<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.ret ? JSON.stringify(event.formulas.ret) : "" %>'><%= event.ret || '' %></td>
+                    <td contenteditable="true" data-field="in" data-cell="V<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.in ? JSON.stringify(event.formulas.in) : "" %>'><%= event.in || '' %></td>
+                    <td contenteditable="true" data-field="minusPhi" data-cell="W<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.minusPhi ? JSON.stringify(event.formulas.minusPhi) : "" %>'><%= event.minusPhi || '' %></td>
+                    <td contenteditable="true" data-field="minusX" data-cell="X<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.minusX ? JSON.stringify(event.formulas.minusX) : "" %>'><%= event.minusX || '' %></td>
+                    <td contenteditable="true" data-field="net" data-cell="Y<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.net ? JSON.stringify(event.formulas.net) : "" %>'><%= event.net || '' %></td>
+                    <td contenteditable="true" data-field="bank" data-cell="Z<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.bank ? JSON.stringify(event.formulas.bank) : "" %>'><%= event.bank || '' %></td>
+                    <td contenteditable="true" data-field="name" data-cell="AA<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.name ? JSON.stringify(event.formulas.name) : "" %>'><%= event.name || '' %></td>
+                    <td contenteditable="true" data-field="performance" data-cell="AB<%= rowIndex + 1 %>" data-formula='<%= event.formulas?.performance ? JSON.stringify(event.formulas.performance) : "" %>'><%= event.performance || '' %></td>
+                    <td data-cell="AC<%= rowIndex + 1 %>"><%= event.photographer ? event.photographer.username : 'Unassigned' %></td>
+                    <td data-cell="AD<%= rowIndex + 1 %>">
+                        <form action="/admin/assign-photographer" method="POST">
+                            <input type="hidden" name="eventId" value="<%= event._id %>">
+                            <select name="photographerId" onchange="this.form.submit()">
+                                <option value="">Select Photographer</option>
+                                <% photographers.forEach(photographer => { %>
+                                    <option value="<%= photographer._id %>" <%= event.photographer && event.photographer._id.toString() === photographer._id.toString() ? 'selected' : '' %>>
+                                        <%= photographer.username %>
+                                    </option>
+                                <% }) %>
+                            </select>
+                        </form>
+                    </td>
+                    <td>
+                        <button class="delete-row-btn" onclick="deleteRow(this)">Delete</button>
+                    </td>
+                </tr>
+            <% }) %>
+        </table>
+    </div>
 
     <script>
-        // Move focus to the next cell when pressing Enter
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                let currentCell = document.activeElement;
-                if (currentCell.contentEditable === "true") {
-                    let nextRow = currentCell.parentElement.nextElementSibling;
-                    if (nextRow) {
-                        let nextCell = nextRow.cells[currentCell.cellIndex];
-                        if (nextCell && nextCell.contentEditable === "true") {
-                            nextCell.focus();
-                        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const table = document.querySelector('table');
+            const formulaSelect = document.getElementById('formulaSelect');
+            const startCalcBtn = document.getElementById('startCalc');
+            const finishSelectionBtn = document.getElementById('finishSelection');
+            const cancelCalcBtn = document.getElementById('cancelCalc');
+            const saveStatus = document.getElementById('saveStatus');
+            const multiSelectInfo = document.getElementById('multiSelectInfo');
+            const conditionInputs = document.getElementById('conditionInputs');
+            const conditionOperator = document.getElementById('conditionOperator');
+            const conditionValue = document.getElementById('conditionValue');
+            
+            let selectedCells = [];
+            let isSelectionMode = false;
+            let isTargetMode = false;
+            let currentOperation = '';
+            let formulaCells = new Map();
+
+            // Add delete row functionality
+            window.deleteRow = async function(button) {
+                if (confirm('Are you sure you want to delete this row?')) {
+                    const row = button.closest('tr');
+                    const eventId = row.dataset.eventId;
+                    
+                    try {
+                        const response = await fetch(`/events/delete/${eventId}`, {
+                            method: 'DELETE',
+                            credentials: 'same-origin'
+                        });
+                        
+                        if (!response.ok) throw new Error('Failed to delete row');
+                        
+                        row.remove();
+                        showSaveStatus('Row deleted successfully', true);
+                        
+                        // Update row numbers
+                        updateRowReferences();
+                    } catch (error) {
+                        console.error('Error deleting row:', error);
+                        showSaveStatus('Error deleting row', false);
                     }
                 }
+            };
+
+            // Load saved cell values from localStorage on page load
+            document.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+                const cellId = cell.dataset.cell;
+                const savedValue = localStorage.getItem(cellId);
+                if (savedValue) {
+                    cell.textContent = savedValue;
+                }
+            });
+
+            // Save cell value to localStorage when edited
+            table.addEventListener('input', function(e) {
+                const cell = e.target.closest('td[contenteditable="true"]');
+                if (!cell) return;
+
+                const cellId = cell.dataset.cell;
+                localStorage.setItem(cellId, cell.textContent);
+
+                const cellValue = cell.textContent;
+                formulaCells.forEach((formula, targetCell) => {
+                    if (formula.cells.includes(cellId)) {
+                        updateFormulaResult(targetCell, formula);
+                    }
+                });
+            });
+
+            formulaSelect.addEventListener('change', function() {
+                const conditionalOperations = ['SUMIF', 'COUNTIF', 'AVERAGEIF'];
+                if (conditionalOperations.includes(this.value)) {
+                    conditionInputs.classList.add('active');
+                } else {
+                    conditionInputs.classList.remove('active');
+                }
+                
+                if (this.value) {
+                    startCalcBtn.style.display = 'inline';
+                    currentOperation = this.value;
+                } else {
+                    startCalcBtn.style.display = 'none';
+                }
+            });
+
+            // Add header click handlersss
+            table.addEventListener('click', function(e) {
+                const header = e.target.closest('th');
+                if (header && isSelectionMode) {
+                    e.preventDefault();
+                    
+                    // Get the column index
+                    const headerIndex = Array.from(header.parentElement.children).indexOf(header);
+                    
+                    // Toggle header selection
+                    header.classList.toggle('selected-header');
+                    
+                    // Get all cells in this column (excluding header and non-editable cells)
+                    const columnCells = Array.from(table.querySelectorAll(`tr td:nth-child(${headerIndex + 1})[contenteditable="true"]`));
+                    
+                    if (header.classList.contains('selected-header')) {
+                        // Add cells to selection
+                        columnCells.forEach(cell => {
+                            if (!selectedCells.includes(cell)) {
+                                selectedCells.push(cell);
+                                cell.classList.add('selected-for-calc');
+                            }
+                        });
+                    } else {
+                        // Remove cells from selection
+                        columnCells.forEach(cell => {
+                            const index = selectedCells.indexOf(cell);
+                            if (index > -1) {
+                                selectedCells.splice(index, 1);
+                                cell.classList.remove('selected-for-calc');
+                            }
+                        });
+                    }
+                    
+                    updateMultiSelectInfo();
+                }
+            });
+
+            // Handle Enter key press in cells
+            table.addEventListener('keydown', async function(e) {
+                if (e.key === 'Enter' && e.target.matches('td[contenteditable="true"]')) {
+                    e.preventDefault();
+                    const currentRow = e.target.closest('tr');
+                    const newRow = currentRow.cloneNode(true);
+                    
+                    // Clear all cell contents in the new row
+                    newRow.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+                        cell.textContent = '';
+                        cell.removeAttribute('data-formula');
+                        cell.classList.remove('formula-cell');
+                        cell.querySelectorAll('.remove-formula, .formula-info').forEach(el => el.remove());
+                    });
+
+                    // Clear photographer selection and form in the new row
+                    const photographerCell = newRow.querySelector('td:nth-last-child(2)');
+                    if (photographerCell) {
+                        photographerCell.textContent = 'Unassigned';
+                    }
+
+                    const photographerForm = newRow.querySelector('td:last-child form');
+                    if (photographerForm) {
+                        const select = photographerForm.querySelector('select');
+                        if (select) {
+                            select.value = '';
+                        }
+                    }
+                    
+                    // Insert new row after current row
+                    currentRow.after(newRow);
+                    
+                    // Create new event in database
+                    try {
+                        const response = await fetch('/events/create', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({}),
+                            credentials: 'same-origin'
+                        });
+                        
+                        if (!response.ok) throw new Error('Failed to create new row');
+                        const data = await response.json();
+                        
+                        // Update the new row with the event ID
+                        newRow.dataset.eventId = data._id;
+                        
+                        // Update the photographer form's eventId input
+                        const eventIdInput = newRow.querySelector('input[name="eventId"]');
+                        if (eventIdInput) {
+                            eventIdInput.value = data._id;
+                        }
+                        
+                        // Update cell references
+                        updateRowReferences();
+                        
+                        showSaveStatus('New row added successfully', true);
+                    } catch (error) {
+                        console.error('Error creating new row:', error);
+                        showSaveStatus('Error creating new row', false);
+                        newRow.remove();
+                    }
+                }
+            });
+
+            // Load existing formulas
+            document.querySelectorAll('td[data-formula]').forEach(cell => {
+                const formulaData = cell.dataset.formula;
+                if (formulaData) {
+                    try {
+                        const formula = JSON.parse(formulaData);
+                        formulaCells.set(cell, formula);
+                        cell.classList.add('formula-cell');
+                        addFormulaUI(cell, formula);
+                    } catch (e) {
+                        console.error('Error parsing formula:', e);
+                    }
+                }
+            });
+
+            startCalcBtn.addEventListener('click', function() {
+                isSelectionMode = true;
+                document.body.classList.add('cell-selection-mode');
+                this.style.display = 'none';
+                finishSelectionBtn.style.display = 'inline';
+                cancelCalcBtn.style.display = 'inline';
+                selectedCells = [];
+                multiSelectInfo.style.display = 'block';
+                updateMultiSelectInfo();
+            });
+
+            finishSelectionBtn.addEventListener('click', function() {
+                if (selectedCells.length < 2) {
+                    alert('Please select at least 2 cells');
+                    return;
+                }
+                isSelectionMode = false;
+                isTargetMode = true;
+                document.body.classList.remove('cell-selection-mode');
+                document.body.classList.add('target-cell-mode');
+                this.style.display = 'none';
+                multiSelectInfo.style.display = 'none';
+                
+                // Clear header selections
+                table.querySelectorAll('th.selected-header').forEach(header => {
+                    header.classList.remove('selected-header');
+                });
+            });
+
+            cancelCalcBtn.addEventListener('click', function() {
+                resetCalculationMode();
+                // Clear header selections
+                table.querySelectorAll('th.selected-header').forEach(header => {
+                    header.classList.remove('selected-header');
+                });
+            });
+
+            function updateMultiSelectInfo() {
+                multiSelectInfo.textContent = `Selected cells: ${selectedCells.length}`;
+            }
+
+            function addFormulaUI(cell, formula) {
+                cell.querySelectorAll('.remove-formula, .formula-info').forEach(el => el.remove());
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-formula';
+                removeBtn.textContent = '×';
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    removeFormula(cell);
+                };
+                cell.appendChild(removeBtn);
+
+                const info = document.createElement('div');
+                info.className = 'formula-info';
+                info.textContent = `${formula.operation}${formula.condition ? ` IF ${formula.condition.operator} ${formula.condition.value}` : ''}: ${formula.cells.join(', ')}`;
+                cell.appendChild(info);
+            }
+
+            async function removeFormula(cell) {
+                cell.classList.remove('formula-cell');
+                cell.querySelectorAll('.remove-formula, .formula-info').forEach(el => el.remove());
+                formulaCells.delete(cell);
+                cell.textContent = '';
+                await saveChanges(cell, null);
+            }
+
+            table.addEventListener('click', async function(e) {
+                const cell = e.target.closest('td[contenteditable="true"]');
+                if (!cell) return;
+
+                if (isSelectionMode) {
+                    cell.classList.toggle('selected-for-calc');
+                    const cellIndex = selectedCells.indexOf(cell);
+                    if (cellIndex === -1) {
+                        selectedCells.push(cell);
+                    } else {
+                        selectedCells.splice(cellIndex, 1);
+                    }
+                    updateMultiSelectInfo();
+                } else if (isTargetMode) {
+                    const formula = {
+                        operation: currentOperation,
+                        cells: selectedCells.map(cell => cell.dataset.cell)
+                    };
+
+                    // Add condition for conditional operations
+                    if (['SUMIF', 'COUNTIF', 'AVERAGEIF'].includes(currentOperation)) {
+                        formula.condition = {
+                            operator: conditionOperator.value,
+                            value: conditionValue.value
+                        };
+                    }
+                    
+                    formulaCells.set(cell, formula);
+                    updateFormulaResult(cell, formula);
+                    cell.classList.add('formula-cell');
+                    addFormulaUI(cell, formula);
+                    
+                    await saveChanges(cell, formula);
+                    resetCalculationMode();
+                }
+            });
+
+            function updateFormulaResult(targetCell, formula) {
+                const numbers = formula.cells.map(cellId => {
+                    const cell = document.querySelector(`[data-cell="${cellId}"]`);
+                    return parseFloat(cell.textContent) || 0;
+                });
+
+                let result;
+                switch(formula.operation) {
+                    case 'SUM':
+                        result = numbers.reduce((a, b) => a + b, 0);
+                        break;
+                    case 'AVG':
+                        result = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+                        break;
+                    case 'MIN':
+                        result = Math.min(...numbers);
+                        break;
+                    case 'MAX':
+                        result = Math.max(...numbers);
+                        break;
+                    case 'COUNT':
+                        result = numbers.length;
+                        break;
+                    case 'MULTIPLY':
+                        result = numbers.reduce((a, b) => a * b, 1);
+                        break;
+                    case 'SUBTRACT':
+                        result = numbers.reduce((a, b) => a - b);
+                        break;
+                    case 'DIVIDE':
+                        result = numbers.reduce((a, b) => a / b);
+                        break;
+                    default:
+                        result = 0;
+                }
+
+                targetCell.textContent = result.toFixed(2);
+                saveChanges(targetCell, formula);
+            }
+
+            function resetCalculationMode() {
+                isSelectionMode = false;
+                isTargetMode = false;
+                selectedCells.forEach(cell => cell.classList.remove('selected-for-calc'));
+                selectedCells = [];
+                document.body.classList.remove('cell-selection-mode', 'target-cell-mode');
+                startCalcBtn.style.display = 'none';
+                finishSelectionBtn.style.display = 'none';
+                cancelCalcBtn.style.display = 'none';
+                formulaSelect.value = '';
+                multiSelectInfo.style.display = 'none';
+            }
+
+            function updateRowReferences() {
+                const rows = table.querySelectorAll('tr');
+                rows.forEach((row, rowIndex) => {
+                    if (rowIndex === 0) return; // Skip header row
+                    row.querySelectorAll('td[data-cell]').forEach(cell => {
+                        const column = cell.dataset.cell.match(/[A-Z]+/)[0];
+                        cell.dataset.cell = `${column}${rowIndex}`;
+                    });
+                });
+            }
+
+            async function saveChanges(cell, formula) {
+                const row = cell.closest('tr');
+                const eventId = row.dataset.eventId;
+                const field = cell.dataset.field;
+                const value = cell.textContent;
+
+                try {
+                    const response = await fetch('/admin/update-event', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            eventId,
+                            field,
+                            value,
+                            formula: formula
+                        }),
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) throw new Error('Failed to save');
+                    showSaveStatus('Changes saved successfully', true);
+                } catch (error) {
+                    console.error('Error saving changes:', error);
+                    showSaveStatus('Error saving changes', false);
+                }
+            }
+
+            function showSaveStatus(message, success) {
+                saveStatus.textContent = message;
+                saveStatus.className = 'save-status ' + (success ? 'save-success' : 'save-error');
+                saveStatus.style.display = 'block';
+                setTimeout(() => {
+                    saveStatus.style.display = 'none';
+                }, 3000);
             }
         });
     </script>

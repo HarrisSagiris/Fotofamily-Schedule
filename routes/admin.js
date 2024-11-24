@@ -2,8 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const Photographer = require('../models/photographer'); // Photographer model
-const Event = require('../models/event'); // Event model
+const Photographer = require('../models/Photographer'); // Photographer model
+const Event = require('../models/Event'); // Event model
 
 // Middleware to ensure admin is authenticated
 function isAuthenticated(req, res, next) {

@@ -40,11 +40,58 @@ async function loadEvents() {
             <td>${new Date(event.date).toLocaleDateString()}</td>
             <td>${event.time}</td>
             <td>${event.location}</td>
-            <td>${event.photographer?.username || 'Unassigned'}</td>
+            <td>
+                <select onchange="assignPhotographer('${event._id}', this.value)">
+                    <option value="">Select Photographer</option>
+                    ${event.photographer ? 
+                        `<option value="${event.photographer._id}" selected>${event.photographer.username}</option>` 
+                        : ''}
+                </select>
+            </td>
             <td><button onclick="deleteEvent('${event._id}')">Delete</button></td>
         `;
         eventList.appendChild(row);
+
+        // Populate photographer options
+        if (!event.photographer) {
+            loadPhotographerOptions(row.querySelector('select'));
+        }
     });
+}
+
+async function loadPhotographerOptions(select) {
+    const response = await fetch('/auth/photographers');
+    const photographers = await response.json();
+    photographers.forEach(photographer => {
+        const option = document.createElement('option');
+        option.value = photographer._id;
+        option.textContent = photographer.username;
+        select.appendChild(option);
+    });
+}
+
+async function assignPhotographer(eventId, photographerId) {
+    try {
+        const response = await fetch('/admin/assign-photographer', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                eventId,
+                photographerId
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to assign photographer');
+        }
+        
+        loadEvents(); // Reload events to show updated assignment
+    } catch (error) {
+        console.error('Error assigning photographer:', error);
+        alert('Failed to assign photographer');
+    }
 }
 
 async function createEvent() {
