@@ -17,7 +17,7 @@ function isAuthenticated(req, res, next) {
 router.get('/', isAuthenticated, async (req, res) => {
     try {
         const events = await Event.find({ photographer: req.session.photographerId });
-        res.render('photographer', { events });
+        res.render('photographerDashboard', { events }); // Updated to match view name
     } catch (error) {
         console.error('Error loading photographer dashboard:', error);
         res.status(500).send('Server error');
@@ -56,18 +56,35 @@ router.get('/logout', (req, res) => {
 
 // Update specific fields for an event by the photographer
 router.post('/update-event', isAuthenticated, async (req, res) => {
-    const { eventId, childrenCount, photo, comments } = req.body;
-
     try {
-        await Event.findByIdAndUpdate(eventId, {
-            childrenCount,
-            photo,
-            comments,
-        });
-        res.redirect('/photographer'); // Redirect back to photographer dashboard
+        const { eventId, updates } = req.body;
+
+        if (!eventId || !updates) {
+            return res.status(400).json({ error: 'Event ID and updates are required' });
+        }
+
+        // Map the form fields to database fields
+        const mappedUpdates = {
+            children: updates.children,
+            count: updates.count,
+            photo: updates.photo,
+            comments: updates.comments
+        };
+
+        const updatedEvent = await Event.findByIdAndUpdate(
+            eventId,
+            { $set: mappedUpdates },
+            { new: true }
+        ).populate('photographer');
+
+        if (!updatedEvent) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        res.json(updatedEvent);
     } catch (error) {
         console.error('Error updating event:', error);
-        res.status(500).send('Server error');
+        res.status(500).json({ error: 'Failed to update event' });
     }
 });
 

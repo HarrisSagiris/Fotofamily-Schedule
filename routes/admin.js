@@ -42,11 +42,15 @@ router.post('/add-photographer', isAuthenticated, async (req, res) => {
 router.post('/assign-photographer', isAuthenticated, async (req, res) => {
     const { eventId, photographerId } = req.body;
     try {
-        await Event.findByIdAndUpdate(eventId, { photographer: photographerId });
-        res.redirect('/admin'); // Redirect back to the admin dashboard
+        const event = await Event.findByIdAndUpdate(
+            eventId,
+            { photographer: photographerId },
+            { new: true }
+        ).populate('photographer');
+        res.json(event);
     } catch (error) {
         console.error('Error assigning photographer:', error);
-        res.status(500).send('Server error');
+        res.status(500).json({ error: 'Failed to assign photographer' });
     }
 });
 
